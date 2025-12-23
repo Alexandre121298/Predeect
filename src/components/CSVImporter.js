@@ -31,7 +31,6 @@ const CSVImporter = ({ onImportComplete }) => {
       let allDraws = [];
       const fileResults = [];
 
-      // Importer chaque fichier
       for (const file of files) {
         try {
           console.log(`Import de ${file.name}...`);
@@ -67,14 +66,12 @@ const CSVImporter = ({ onImportComplete }) => {
         throw new Error('Aucune donnée valide trouvée dans les fichiers');
       }
 
-      // Trier par date (plus récent en premier)
       allDraws.sort((a, b) => {
         const dateA = a.date.split('/').reverse().join('');
         const dateB = b.date.split('/').reverse().join('');
         return dateB.localeCompare(dateA);
       });
 
-      // Supprimer les doublons (même date)
       const uniqueDraws = [];
       const seenDates = new Set();
       
@@ -85,7 +82,6 @@ const CSVImporter = ({ onImportComplete }) => {
         }
       }
 
-      // Sauvegarder
       storageService.save(STORAGE_KEYS.HISTORICAL_DATA, uniqueDraws);
       const stats = lotoService.calculateStats(uniqueDraws);
       storageService.save(STORAGE_KEYS.STATS, stats);
@@ -121,7 +117,6 @@ const CSVImporter = ({ onImportComplete }) => {
         Importer les Données Historiques
       </h2>
       
-      {/* Instructions */}
       <div className="mb-4 p-4 bg-blue-50 rounded-lg">
         <h3 className="font-semibold text-blue-900 mb-2">📋 Instructions</h3>
         <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
@@ -143,7 +138,6 @@ const CSVImporter = ({ onImportComplete }) => {
         </a>
       </div>
 
-      {/* Zone de sélection */}
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-4">
         <input
           type="file"
@@ -171,7 +165,6 @@ const CSVImporter = ({ onImportComplete }) => {
         </label>
       </div>
 
-      {/* Liste des fichiers sélectionnés */}
       {files.length > 0 && (
         <div className="mb-4">
           <h3 className="font-semibold text-gray-700 mb-2">Fichiers sélectionnés :</h3>
@@ -203,7 +196,6 @@ const CSVImporter = ({ onImportComplete }) => {
         </div>
       )}
 
-      {/* Erreur */}
       {error && (
         <div className="mt-4 p-4 bg-red-50 rounded-lg border border-red-200">
           <div className="flex items-start gap-2">
@@ -216,7 +208,6 @@ const CSVImporter = ({ onImportComplete }) => {
         </div>
       )}
 
-      {/* Succès */}
       {success && importStats && (
         <div className="mt-4 space-y-3">
           <div className="p-4 bg-green-50 rounded-lg border border-green-200">
@@ -242,7 +233,6 @@ const CSVImporter = ({ onImportComplete }) => {
               </div>
             </div>
 
-            {/* Détails par fichier */}
             <div className="space-y-1">
               {importStats.fileResults.map((result, idx) => (
                 <div key={idx} className={`text-sm p-2 rounded ${result.success ? 'bg-green-100' : 'bg-orange-100'}`}>
@@ -272,6 +262,5 @@ const CSVImporter = ({ onImportComplete }) => {
     </div>
   );
 };
-
 
 export default CSVImporter;

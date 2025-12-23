@@ -61,11 +61,9 @@ class LotoService {
     });
   }
 
-  // Détecter le format du CSV automatiquement
   detectCSVFormat(headers) {
     const headerStr = headers.join('|').toLowerCase();
     
-    // Format moderne (depuis 2008) - différentes variantes
     const modernFormats = [
       {
         name: 'modern_v1',
@@ -108,23 +106,19 @@ class LotoService {
       }
     ];
 
-    // Trouver le format correspondant
     for (const format of modernFormats) {
       if (format.test()) {
         return format;
       }
     }
 
-    // Format par défaut si aucun match
     return modernFormats[0];
   }
 
-  // Trouver la valeur d'une colonne avec plusieurs noms possibles
   findColumnValue(row, possibleNames) {
     for (const name of possibleNames) {
       const normalizedName = name.toLowerCase().replace(/\s+/g, '_');
       
-      // Chercher dans les clés de la ligne
       for (const key in row) {
         const normalizedKey = key.toLowerCase().replace(/\s+/g, '_');
         if (normalizedKey === normalizedName || normalizedKey.includes(normalizedName)) {
@@ -145,7 +139,6 @@ class LotoService {
 
     for (const row of data) {
       try {
-        // Extraire les données selon le mapping
         const dateStr = this.findColumnValue(row, format.mapping.date);
         const ball1 = this.findColumnValue(row, format.mapping.ball1);
         const ball2 = this.findColumnValue(row, format.mapping.ball2);
@@ -154,7 +147,6 @@ class LotoService {
         const ball5 = this.findColumnValue(row, format.mapping.ball5);
         const chance = this.findColumnValue(row, format.mapping.chance);
 
-        // Parser les numéros
         const numbers = [ball1, ball2, ball3, ball4, ball5]
           .map(n => {
             if (typeof n === 'string') {
@@ -166,7 +158,6 @@ class LotoService {
 
         const chanceNum = parseInt(chance);
 
-        // Valider
         if (numbers.length === 5 && !isNaN(chanceNum) && chanceNum >= 1 && chanceNum <= 10) {
           draws.push({
             date: this.parseDate(dateStr),
@@ -183,29 +174,24 @@ class LotoService {
     return draws;
   }
 
-  // Parser différents formats de date
   parseDate(dateStr) {
     if (!dateStr) return 'Date inconnue';
     
     const str = dateStr.toString().trim();
     
-    // Format DD/MM/YYYY
     if (str.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
       return str;
     }
     
-    // Format YYYY-MM-DD
     if (str.match(/^\d{4}-\d{2}-\d{2}$/)) {
       const [year, month, day] = str.split('-');
       return `${day}/${month}/${year}`;
     }
     
-    // Format DD-MM-YYYY
     if (str.match(/^\d{1,2}-\d{1,2}-\d{4}$/)) {
       return str.replace(/-/g, '/');
     }
 
-    // Essayer de parser avec Date
     try {
       const date = new Date(str);
       if (!isNaN(date.getTime())) {
