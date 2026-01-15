@@ -1,5 +1,5 @@
 // src/components/NotificationManager.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Bell, BellOff, TestTube } from 'lucide-react';
 
 const NotificationManager = () => {
@@ -72,7 +72,7 @@ const NotificationManager = () => {
   };
 
   // Planifier les notifications pour les jours de tirage
-  const scheduleNotifications = () => {
+  const scheduleNotifications = useCallback(() => {
     // Vérifier toutes les heures
     const checkTime = () => {
       const now = new Date();
@@ -116,7 +116,7 @@ const NotificationManager = () => {
     // Puis toutes les 5 minutes
     const intervalId = setInterval(checkTime, 300000); // 5 minutes
     localStorage.setItem('notification_interval', intervalId.toString());
-  };
+  }, []);
 
   // Arrêter les vérifications
   const clearScheduledNotifications = () => {

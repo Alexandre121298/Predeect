@@ -1,7 +1,6 @@
 // src/components/HistoryView.js
 import React, { useState } from 'react';
-import { Plus, Trash2, CheckCircle, XCircle } from 'lucide-react';
-import { lotoService } from '../services/lotoService';
+import { Plus, CheckCircle, XCircle } from 'lucide-react';
 
 const HistoryView = ({ suggestedDraws, actualDraws, onAddActual }) => {
   const [showAddModal, setShowAddModal] = useState(false);

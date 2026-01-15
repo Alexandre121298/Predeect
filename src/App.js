@@ -1,5 +1,5 @@
 // src/App.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useCallback } from 'react';
 import { TrendingUp, Shuffle, History, Database, Settings } from 'lucide-react';
 import Statistics from './components/Statistics';
 import Generator from './components/Generator';
@@ -7,7 +7,6 @@ import HistoryView from './components/HistoryView';
 import CSVImporter from './components/CSVImporter';
 import NotificationManager from './components/NotificationManager';
 import { storageService, STORAGE_KEYS } from './services/storageService';
-import SyncButton from './components/SyncButton';
 import { syncService } from './services/syncService';
 import QuickAddDraw from './components/QuickAddDraw';
 
@@ -35,17 +34,17 @@ const App = () => {
     });
   }, []);
 
-  const handleSyncComplete = (result) => {
-  if (result.newDrawsCount > 0) {
-    // Recharger les données
-    loadData();
+//   const handleSyncComplete = (result) => {
+//   if (result.newDrawsCount > 0) {
+//     // Recharger les données
+//     loadData();
     
-    // Afficher une notification (optionnel)
-    console.log(`${result.newDrawsCount} nouveau(x) tirage(s) ajouté(s)`);
-  }
-};
+//     // Afficher une notification (optionnel)
+//     console.log(`${result.newDrawsCount} nouveau(x) tirage(s) ajouté(s)`);
+//   }
+// };
 
-  const loadData = () => {
+const loadData = useCallback(() => {
     // Charger les statistiques
     const savedStats = storageService.load(STORAGE_KEYS.STATS);
     if (savedStats) {
@@ -68,7 +67,7 @@ const App = () => {
     // Date de dernière mise à jour
     const lastUpd = storageService.load('last_update');
     if (lastUpd) setLastUpdate(lastUpd);
-  };
+  }, []);
 
   const generateDemoStats = () => {
     const numberStats = [];
