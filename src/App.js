@@ -1,14 +1,15 @@
 // src/App.js
 import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Calendar, TrendingUp, TrendingDown, Shuffle, History, Database, Settings } from 'lucide-react';
+import { TrendingUp, Shuffle, History, Database, Settings } from 'lucide-react';
 import Statistics from './components/Statistics';
 import Generator from './components/Generator';
 import HistoryView from './components/HistoryView';
 import CSVImporter from './components/CSVImporter';
 import NotificationManager from './components/NotificationManager';
 import { storageService, STORAGE_KEYS } from './services/storageService';
-import { lotoService } from './services/lotoService';
+import SyncButton from './components/SyncButton';
+import { syncService } from './services/syncService';
+import QuickAddDraw from './components/QuickAddDraw';
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('stats');
@@ -21,7 +22,28 @@ const App = () => {
   // Charger les données au démarrage
   useEffect(() => {
     loadData();
+    
+    // Synchronisation automatique au démarrage
+    syncService.autoSync().then(result => {
+      if (result.success && !result.skipped && result.newDrawsCount > 0) {
+        console.log(`✨ ${result.newDrawsCount} nouveau(x) tirage(s) synchronisé(s)`);
+        // Recharger les données si de nouveaux tirages ont été ajoutés
+        loadData();
+      }
+    }).catch(error => {
+      console.error('Erreur de synchronisation automatique:', error);
+    });
   }, []);
+
+  const handleSyncComplete = (result) => {
+  if (result.newDrawsCount > 0) {
+    // Recharger les données
+    loadData();
+    
+    // Afficher une notification (optionnel)
+    console.log(`${result.newDrawsCount} nouveau(x) tirage(s) ajouté(s)`);
+  }
+};
 
   const loadData = () => {
     // Charger les statistiques
@@ -224,6 +246,8 @@ const App = () => {
 
         {activeTab === 'settings' && (
           <div className="space-y-6">
+            {/* <SyncButton onSyncComplete={handleSyncComplete} /> */}
+            <QuickAddDraw onDrawAdded={loadData} />
             <CSVImporter onImportComplete={handleImportComplete} />
             <NotificationManager />
             
