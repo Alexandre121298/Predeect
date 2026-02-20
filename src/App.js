@@ -1,5 +1,5 @@
 // src/App.js
-import React, { useState, useEffect,useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, Shuffle, History, Database, Settings } from 'lucide-react';
 import Statistics from './components/Statistics';
 import Generator from './components/Generator';
@@ -8,6 +8,7 @@ import CSVImporter from './components/CSVImporter';
 import NotificationManager from './components/NotificationManager';
 import { storageService, STORAGE_KEYS } from './services/storageService';
 import { syncService } from './services/syncService';
+import { drawSchedulerService } from './services/drawSchedulerService';
 import QuickAddDraw from './components/QuickAddDraw';
 
 const App = () => {
@@ -20,18 +21,39 @@ const App = () => {
 
   // Charger les données au démarrage
   useEffect(() => {
-    loadData();
-    
-    // Synchronisation automatique au démarrage
-    syncService.autoSync().then(result => {
+    let isMounted = true;
+
+    const refreshAfterSync = (result, source) => {
+      if (!isMounted || !result) {
+        return;
+      }
+
       if (result.success && !result.skipped && result.newDrawsCount > 0) {
-        console.log(`✨ ${result.newDrawsCount} nouveau(x) tirage(s) synchronisé(s)`);
-        // Recharger les données si de nouveaux tirages ont été ajoutés
+        const updatedAt = new Date().toISOString();
+        console.log('[' + source + '] ' + result.newDrawsCount + ' nouveau(x) tirage(s) synchronise(s)');
+        storageService.save('last_update', updatedAt);
+        setLastUpdate(updatedAt);
         loadData();
       }
+    };
+
+    loadData();
+
+    // Synchronisation automatique au demarrage
+    syncService.autoSync().then(result => {
+      refreshAfterSync(result, 'AutoSync');
     }).catch(error => {
       console.error('Erreur de synchronisation automatique:', error);
     });
+
+    drawSchedulerService.start((result) => {
+      refreshAfterSync(result, 'ScheduledSync');
+    });
+
+    return () => {
+      isMounted = false;
+      drawSchedulerService.stop();
+    };
   }, []);
 
 //   const handleSyncComplete = (result) => {
