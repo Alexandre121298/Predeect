@@ -1,65 +1,23 @@
 // src/components/HistoryView.js
-import React, { useState } from 'react';
-import { Plus, CheckCircle, XCircle } from 'lucide-react';
+import React from 'react';
+import { Calendar, Trash2 } from 'lucide-react';
+import { storageService, STORAGE_KEYS } from '../services/storageService';
 
-const HistoryView = ({ suggestedDraws, actualDraws, onAddActual }) => {
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [formData, setFormData] = useState({
-    date: '',
-    numbers: ['', '', '', '', ''],
-    chance: ''
-  });
-
-  const handleAddDraw = () => {
-    // Validation
-    const nums = formData.numbers.map(n => parseInt(n));
-    const chance = parseInt(formData.chance);
-
-    if (nums.some(n => isNaN(n) || n < 1 || n > 49)) {
-      alert('Les numéros doivent être entre 1 et 49');
-      return;
+const HistoryView = ({ suggestedDraws, onUpdate }) => {
+  
+  const handleDelete = (drawId) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce tirage ?')) {
+      const updatedDraws = suggestedDraws.filter(draw => draw.id !== drawId);
+      storageService.save(STORAGE_KEYS.SUGGESTED_DRAWS, updatedDraws);
+      if (onUpdate) onUpdate();
     }
-
-    if (isNaN(chance) || chance < 1 || chance > 10) {
-      alert('Le numéro chance doit être entre 1 et 10');
-      return;
-    }
-
-    if (!formData.date) {
-      alert('Veuillez entrer une date');
-      return;
-    }
-
-    const newDraw = {
-      id: Date.now(),
-      date: formData.date,
-      numbers: nums.sort((a, b) => a - b),
-      chance: chance,
-      actual: true
-    };
-
-    onAddActual(newDraw);
-    setShowAddModal(false);
-    setFormData({ date: '', numbers: ['', '', '', '', ''], chance: '' });
   };
 
-  const handleNumberChange = (index, value) => {
-    const newNumbers = [...formData.numbers];
-    newNumbers[index] = value;
-    setFormData({ ...formData, numbers: newNumbers });
-  };
-
-  // Comparer les tirages
-  const getComparison = (suggested, actual) => {
-    if (!suggested || !actual) return null;
-    
-    const matchingNumbers = suggested.numbers.filter(num => 
-      actual.numbers.includes(num)
-    ).length;
-    
-    const matchingChance = suggested.chance === actual.chance;
-
-    return { matchingNumbers, matchingChance };
+  const handleDeleteAll = () => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer TOUS les tirages générés ?')) {
+      storageService.save(STORAGE_KEYS.SUGGESTED_DRAWS, []);
+      if (onUpdate) onUpdate();
+    }
   };
 
   return (
@@ -68,233 +26,160 @@ const HistoryView = ({ suggestedDraws, actualDraws, onAddActual }) => {
       <div className="bg-white rounded-lg shadow-lg p-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold text-indigo-900">Historique des Tirages</h2>
+            <h2 className="text-2xl font-bold text-indigo-900">Mes Prédictions</h2>
             <p className="text-gray-600 mt-1">
-              Comparez vos prédictions avec les résultats réels
+              Historique de tous vos tirages générés
             </p>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Ajouter un Résultat
-          </button>
+          <div className="text-right">
+            <div className="text-3xl font-bold text-indigo-600">
+              {suggestedDraws.length}
+            </div>
+            <div className="text-sm text-gray-600">
+              {suggestedDraws.length > 1 ? 'Tirages' : 'Tirage'}
+            </div>
+          </div>
         </div>
+
+        {suggestedDraws.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <button
+              onClick={handleDeleteAll}
+              className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Supprimer tout l'historique
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Modal d'ajout */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">
-              Ajouter un Résultat Réel
-            </h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Date du tirage
-                </label>
-                <input
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
+      {/* Liste des tirages */}
+      {suggestedDraws.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-lg p-12 text-center">
+          <div className="text-gray-400 mb-4">
+            <Calendar className="w-16 h-16 mx-auto opacity-50" />
+          </div>
+          <p className="text-gray-500 text-lg mb-2">Aucun tirage généré</p>
+          <p className="text-sm text-gray-400">
+            Allez dans l'onglet "Générer" pour créer vos premiers tirages
+          </p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="space-y-4">
+            {suggestedDraws.map((draw) => (
+              <div 
+                key={draw.id} 
+                className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-5 border-2 border-indigo-200 hover:border-indigo-300 transition-all group"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <Calendar className="w-4 h-4 text-indigo-600" />
+                    <span className="font-semibold">{draw.date}</span>
+                  </div>
+                  <button
+                    onClick={() => handleDelete(draw.id)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 p-1"
+                    title="Supprimer ce tirage"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  5 Numéros (1-49)
-                </label>
-                <div className="grid grid-cols-5 gap-2">
-                  {formData.numbers.map((num, idx) => (
-                    <input
-                      key={idx}
-                      type="number"
-                      min="1"
-                      max="49"
-                      value={num}
-                      onChange={(e) => handleNumberChange(idx, e.target.value)}
-                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-indigo-500"
-                      placeholder={idx + 1}
-                    />
-                  ))}
+                {/* Numéros principaux */}
+                <div className="mb-3">
+                  <div className="text-xs text-gray-600 mb-2 font-medium">
+                    5 Numéros
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    {draw.numbers.map((num) => (
+                      <div 
+                        key={num} 
+                        className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-full flex items-center justify-center font-bold shadow-lg"
+                      >
+                        {num}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Numéro Chance */}
+                <div>
+                  <div className="text-xs text-gray-600 mb-2 font-medium">
+                    Numéro Chance
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 text-white rounded-full flex items-center justify-center text-lg font-bold shadow-lg">
+                      {draw.chance}
+                    </div>
+                    {draw.timestamp && (
+                      <span className="text-xs text-gray-500">
+                        Généré le {new Date(draw.timestamp).toLocaleString('fr-FR')}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Numéro Chance (1-10)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={formData.chance}
-                  onChange={(e) => setFormData({ ...formData, chance: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={handleAddDraw}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg"
-                >
-                  Ajouter
-                </button>
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg"
-                >
-                  Annuler
-                </button>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Liste des tirages */}
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Tirages suggérés */}
-        <div>
-          <h3 className="text-lg font-bold text-indigo-700 mb-4 flex items-center">
-            <span className="w-3 h-3 bg-indigo-600 rounded-full mr-2"></span>
-            Mes Prédictions ({suggestedDraws.length})
-          </h3>
-          <div className="space-y-3 max-h-[600px] overflow-y-auto">
-            {suggestedDraws.length === 0 ? (
-              <div className="text-center py-8 bg-white rounded-lg">
-                <p className="text-gray-500">Aucune prédiction encore</p>
-                <p className="text-sm text-gray-400 mt-2">
-                  Générez un tirage dans l'onglet "Générer"
-                </p>
-              </div>
-            ) : (
-              suggestedDraws.map((draw) => (
-                <div key={draw.id} className="bg-indigo-50 rounded-lg p-4 border-2 border-indigo-200">
-                  <div className="text-sm text-gray-600 mb-3 font-medium">
-                    {draw.date}
-                  </div>
-                  <div className="flex gap-2 flex-wrap mb-2">
-                    {draw.numbers.map((num) => (
-                      <div key={num} className="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-sm shadow">
-                        {num}
-                      </div>
-                    ))}
-                    <div className="w-10 h-10 bg-yellow-500 text-white rounded-full flex items-center justify-center font-bold text-sm shadow">
-                      {draw.chance}
-                    </div>
-                  </div>
-                  
-                  {/* Vérifier s'il y a un résultat correspondant */}
-                  {actualDraws.find(a => a.date === draw.date) && (
-                    <div className="mt-3 pt-3 border-t border-indigo-300">
-                      {(() => {
-                        const actual = actualDraws.find(a => a.date === draw.date);
-                        const comp = getComparison(draw, actual);
-                        return (
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs">
-                              <span className="font-semibold">Résultat: </span>
-                              {comp.matchingNumbers} numéro{comp.matchingNumbers > 1 ? 's' : ''} trouvé{comp.matchingNumbers > 1 ? 's' : ''}
-                              {comp.matchingChance && ' + Chance ✨'}
-                            </div>
-                            {comp.matchingNumbers >= 2 || comp.matchingChance ? (
-                              <CheckCircle className="w-5 h-5 text-green-600" />
-                            ) : (
-                              <XCircle className="w-5 h-5 text-gray-400" />
-                            )}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Résultats réels */}
-        <div>
-          <h3 className="text-lg font-bold text-green-700 mb-4 flex items-center">
-            <span className="w-3 h-3 bg-green-600 rounded-full mr-2"></span>
-            Résultats Réels ({actualDraws.length})
-          </h3>
-          <div className="space-y-3 max-h-[600px] overflow-y-auto">
-            {actualDraws.length === 0 ? (
-              <div className="text-center py-8 bg-white rounded-lg">
-                <p className="text-gray-500">Aucun résultat enregistré</p>
-                <p className="text-sm text-gray-400 mt-2">
-                  Cliquez sur "Ajouter un Résultat"
-                </p>
-              </div>
-            ) : (
-              actualDraws.map((draw) => (
-                <div key={draw.id} className="bg-green-50 rounded-lg p-4 border-2 border-green-200">
-                  <div className="text-sm text-gray-600 mb-3 font-medium">
-                    {draw.date}
-                  </div>
-                  <div className="flex gap-2 flex-wrap">
-                    {draw.numbers.map((num) => (
-                      <div key={num} className="w-10 h-10 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-sm shadow">
-                        {num}
-                      </div>
-                    ))}
-                    <div className="w-10 h-10 bg-yellow-500 text-white rounded-full flex items-center justify-center font-bold text-sm shadow">
-                      {draw.chance}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Statistiques de prédiction */}
-      {suggestedDraws.length > 0 && actualDraws.length > 0 && (
+      {/* Statistiques globales */}
+      {suggestedDraws.length > 0 && (
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">
-            📊 Statistiques de Prédiction
+          <h3 className="text-lg font-bold text-gray-900 mb-4">
+            📊 Statistiques
           </h3>
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-indigo-50 rounded-lg p-4 text-center">
-              <div className="text-3xl font-bold text-indigo-600">
+              <div className="text-2xl font-bold text-indigo-600">
                 {suggestedDraws.length}
               </div>
-              <div className="text-sm text-gray-600 mt-1">
-                Prédictions faites
+              <div className="text-xs text-gray-600 mt-1">
+                Total de tirages
               </div>
             </div>
-            <div className="bg-green-50 rounded-lg p-4 text-center">
-              <div className="text-3xl font-bold text-green-600">
-                {actualDraws.length}
+            
+            <div className="bg-purple-50 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-purple-600">
+                {suggestedDraws[0]?.date || '-'}
               </div>
-              <div className="text-sm text-gray-600 mt-1">
-                Résultats vérifiés
+              <div className="text-xs text-gray-600 mt-1">
+                Dernier tirage
               </div>
             </div>
-            <div className="bg-yellow-50 rounded-lg p-4 text-center">
-              <div className="text-3xl font-bold text-yellow-600">
+
+            <div className="bg-blue-50 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-blue-600">
                 {(() => {
-                  let matches = 0;
-                  suggestedDraws.forEach(s => {
-                    const actual = actualDraws.find(a => a.date === s.date);
-                    if (actual) {
-                      const comp = getComparison(s, actual);
-                      if (comp.matchingNumbers >= 2) matches++;
-                    }
-                  });
-                  return matches;
+                  // Calculer le numéro le plus joué
+                  const allNumbers = suggestedDraws.flatMap(d => d.numbers);
+                  const freq = {};
+                  allNumbers.forEach(n => freq[n] = (freq[n] || 0) + 1);
+                  const mostPlayed = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
+                  return mostPlayed ? mostPlayed[0] : '-';
                 })()}
               </div>
-              <div className="text-sm text-gray-600 mt-1">
-                Prédictions gagnantes
+              <div className="text-xs text-gray-600 mt-1">
+                N° le plus joué
+              </div>
+            </div>
+
+            <div className="bg-green-50 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-green-600">
+                {(() => {
+                  // Calculer la chance la plus jouée
+                  const allChances = suggestedDraws.map(d => d.chance);
+                  const freq = {};
+                  allChances.forEach(c => freq[c] = (freq[c] || 0) + 1);
+                  const mostPlayed = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
+                  return mostPlayed ? mostPlayed[0] : '-';
+                })()}
+              </div>
+              <div className="text-xs text-gray-600 mt-1">
+                Chance la plus jouée
               </div>
             </div>
           </div>
